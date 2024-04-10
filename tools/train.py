@@ -4,22 +4,18 @@ from __future__ import print_function
 import _init_paths
 import os
 import os.path as osp
-
 import json
 import time
 import random
 import sys
 from lib.loaders.dataloader_2Lrecon import DataLoader
-
 from layers.model import PSRN
 import evals.utils as model_utils
 import evals.eval as eval_utils
 import numpy as np
-
 from opt import parse_opt
 from Config import *
 import io
-
 import torch
 
 def load_vocab_dict_from_file(dict_file):
@@ -127,7 +123,6 @@ def main(args):
 
     f = open("./result", "w")
     f.close()
-
     embedmat_path = 'cache/word_embedding/embed_matrix.npy'
     embedding_mat = np.load(embedmat_path)
 
@@ -136,13 +131,15 @@ def main(args):
     vocab_dict = load_vocab_dict_from_file(vocab_file)
     f.close()
 
-    # mode = "stage2"
+    mode = "stage3"
     freeze_stage2 = [model.pair_encoder, model.pair_attn, model.sub_attn, model.visual_emb, model.pair_emb]
-    freeze_stage3 = [model.pair_encoder, model.sub_attn, model.visual_emb, model.pair_emb, model.sub_sim_attn,
-                     model.obj_sim_attn, model.sub_attn_apmr, model.loc_attn, model.obj_attn_apmr, model.sub_encoder,
+    freeze_stage3 = [model.pair_encoder, model.pair_attn, model.sub_attn, model.visual_emb, model.pair_emb,
+                     model.sub_sim_attn, model.obj_sim_attn, model.sub_attn_apmr, model.loc_attn, model.obj_attn_apmr, model.sub_encoder,
                      model.loc_encoder, model.rel_encoder, model.loc_score, model.sub_decoder, model.rnn_encoder,
                      model.obj_decoder, model.feat_fuse]
     RDC = opt['RDC']
+
+
     while True:
         if mode == "stage2":
             for module in freeze_stage2:
@@ -153,6 +150,20 @@ def main(args):
             for module in freeze_stage3:
                 for param in module.parameters():
                     param.requires_grad = False
+
+        if mode == "stage1" and (epoch > 1):
+            mode = "stage2"
+            print("---Enter Stage 2---", mode)
+            # update optimizer
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = opt['learning_rate']
+
+        if mode == "stage2" and (epoch > 3):
+            mode = "stage3"
+            print("---Enter Stage 3---", mode)
+            # update optimizer
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = opt['learning_rate']
 
         torch.cuda.empty_cache()
         model.train()
@@ -218,7 +229,6 @@ def main(args):
             loss_history[iter] = loss.item()
             print('i[%s], e[%s], sub_loss=%.3f, obj_loss=%.3f, rel_loss=%.3f, earn_loss=%.3f, lr=%.2E, time=%.3f h, mode=%s' % (
             iter, epoch, sub_loss.item(), obj_loss.item(), rel_loss.item(), earn_loss, lr, total_time, mode))
-
             data_time, model_time = 0, 0
 
         if opt['learning_rate_decay_start'] > 0 and iter > opt['learning_rate_decay_start']:
@@ -235,9 +245,7 @@ def main(args):
             val_accuracies += [(iter, acc)]
             print('validation loss: %.4f' % val_loss)
             print('validation acc : %.4f%%\n' % (acc * 100.0))
-
             current_score = acc
-
             f = open("./result", "a")
             f.write(str(current_score) + "\n")
             f.close()
@@ -254,12 +262,21 @@ def main(args):
                 torch.save(checkpoint, checkpoint_path)
                 print('model saved to %s' % checkpoint_path)
 
-            if mode == "stage1" and (epoch > 3):
+            if mode == "stage1" and (epoch > 1):
                 mode = "stage2"
                 print("---Enter Stage 2---", mode)
-            if mode == "stage2" and (epoch > 8):
+                # update optimizer
+                for param_group in optimizer.param_groups:
+                    param_group['lr'] = opt['learning_rate']
+                model_utils.set_lr(optimizer, opt['learning_rate'])
+
+            if mode == "stage2" and (epoch > 3):
                 mode = "stage3"
                 print("---Enter Stage 3---", mode)
+                # update optimizer
+                for param_group in optimizer.param_groups:
+                    param_group['lr'] = opt['learning_rate']
+                model_utils.set_lr(optimizer, opt['learning_rate'])
 
             # write json report
             infos['iter'] = iter
@@ -285,3 +302,4 @@ def main(args):
 if __name__ == '__main__':
     args = parse_opt()
     main(args)
+
