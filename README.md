@@ -48,3 +48,6 @@ Evaluate PSRN with trained weights:
 python tools/eval.py --dataset refcocog --splitBy google --split val --stage 3
 ```  
  The trained weights file can be downloaded from [here](https://drive.google.com/drive/folders/1FT217iwNP268bVt-Emv5yhGUtOssSsP0),  place them in the directory output/.
+
+## Acknowledge
+This code is partially based on [DTWREG](https://github.com/insomnia94/DTWREG) and [MAttNet](https://github.com/lichengunc/MAttNet).
