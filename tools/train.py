@@ -151,14 +151,14 @@ def main(args):
                 for param in module.parameters():
                     param.requires_grad = False
 
-        if mode == "stage1" and (epoch > 1):
+        if mode == "stage1" and (epoch > 3):
             mode = "stage2"
             print("---Enter Stage 2---", mode)
             # update optimizer
             for param_group in optimizer.param_groups:
                 param_group['lr'] = opt['learning_rate']
 
-        if mode == "stage2" and (epoch > 3):
+        if mode == "stage2" and (epoch > 7):
             mode = "stage3"
             print("---Enter Stage 3---", mode)
             # update optimizer
