@@ -131,7 +131,7 @@ def main(args):
     vocab_dict = load_vocab_dict_from_file(vocab_file)
     f.close()
 
-    mode = "stage3"
+    mode = "stage1"
     freeze_stage2 = [model.pair_encoder, model.pair_attn, model.sub_attn, model.visual_emb, model.pair_emb]
     freeze_stage3 = [model.pair_encoder, model.pair_attn, model.sub_attn, model.visual_emb, model.pair_emb,
                      model.sub_sim_attn, model.obj_sim_attn, model.sub_attn_apmr, model.loc_attn, model.obj_attn_apmr, model.sub_encoder,
